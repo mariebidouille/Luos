@@ -27,6 +27,7 @@ typedef enum
     PIPE_TYPE,
     MOTOR_TYPE,
     SERVO_MOTOR_TYPE,
+    SNIFFER_MOD,
     LUOS_LAST_TYPE
 } luos_type_t;
 
