@@ -152,6 +152,9 @@ void Luos_Loop(void)
  ******************************************************************************/
 static error_return_t Luos_IsALuosCmd(service_t *service, uint8_t cmd, uint16_t size)
 {
+#ifdef SNIFFER_H //the messages should always be treated by the sniffer and not by luos
+    return FAILED;
+#endif /* SNIFFER_H */
     switch (cmd)
     {
         case WRITE_NODE_ID:
