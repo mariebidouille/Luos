@@ -444,9 +444,9 @@ void Recep_InterpretMsgProtocol(msg_t *msg)
 {
     uint16_t i = 0;
     // Find if we are concerned by this message.
-#ifdef SNIFFER_H //always allocate msg for the sniffer_container
+#ifdef SNIFFER_H //always allocate msg for the sniffer_service
 
-    MsgAlloc_LuosTaskAlloc((ll_container_t *)&ctx.ll_container_table[0], msg);
+    MsgAlloc_LuosTaskAlloc((ll_service_t *)&ctx.ll_service_table[0], msg);
     return;
 #endif /*  SNIFFER_H */
     switch (msg->header.target_mode)

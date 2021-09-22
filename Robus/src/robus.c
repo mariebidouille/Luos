@@ -55,11 +55,11 @@ volatile uint16_t last_node = 0;
  ******************************************************************************/
 void Robus_Init(memory_stats_t *memory_stats)
 {
-    // Init the number of created  virtual container.
-    ctx.ll_container_number = 0;
+    // Init the number of created  virtual service.
+    ctx.ll_service_number = 0;
 
 #ifndef SNIFFER_H
-    // Set default container id. This id is a void id used if no container is created.
+    // Set default service id. This id is a void id used if no service is created.
     ctx.node.node_id = DEFAULTID;
 #else  //in case we have a sniffer initialize the sniffer node
     // Set unique fixed ID of sniffer node
@@ -87,7 +87,7 @@ void Robus_Init(memory_stats_t *memory_stats)
     // init detection structure
     PortMng_Init();
 
-    // Initialize the robus container status
+    // Initialize the robus service status
     ctx.rx.status.unmap      = 0;
     ctx.rx.status.identifier = 0xF;
 }
@@ -119,18 +119,18 @@ void Robus_Loop(void)
  ******************************************************************************/
 ll_service_t *Robus_ServiceCreate(uint16_t type)
 {
-    // Set the container type
-    ctx.ll_container_table[ctx.ll_container_number].type = type;
+    // Set the service type
+    ctx.ll_service_table[ctx.ll_service_number].type = type;
 
-#ifdef SNIFFER_H //initialization of sniffer's container fixed ID
-    ctx.ll_container_table[ctx.ll_container_number].id = 0xFFFF;
+#ifdef SNIFFER_H //initialization of sniffer's service fixed ID
+    ctx.ll_service_table[ctx.ll_service_number].id = 0xFFFF;
 #else
-    // Initialise the container id, TODO the ID could be stored in EEprom, the default ID could be set in factory...
-    ctx.ll_container_table[ctx.ll_container_number].id = DEFAULTID;
+    // Initialise the service id, TODO the ID could be stored in EEprom, the default ID could be set in factory...
+    ctx.ll_service_table[ctx.ll_service_number].id = DEFAULTID;
 #endif /* SNIFFER_H */
 
-    // Initialize dead container detection
-    ctx.ll_container_table[ctx.ll_container_number].dead_container_spotted = 0;
+    // Initialize dead service detection
+    ctx.ll_service_table[ctx.ll_service_number].dead_service_spotted = 0;
 
     // Clear stats
     ctx.ll_service_table[ctx.ll_service_number].ll_stat.max_retry = 0;
@@ -367,7 +367,7 @@ static error_return_t Robus_MsgHandler(msg_t *input)
     return FAILED;
 #endif /* SNIFFER_H */
 
-    ll_service_t *ll_service = Recep_GetConcernedLLContainer(&input->header);
+    ll_service_t *ll_service = Recep_GetConcernedLLService(&input->header);
 
     switch (input->header.cmd)
     {
