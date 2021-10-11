@@ -158,6 +158,7 @@ void Recep_GetData(volatile uint8_t *data)
                 memcpy((msg_t *)&current_msg->data[current_msg->header.size - sizeof(uint64_t)], &ll_rx_timestamp, sizeof(uint64_t));
             }
 
+#ifndef SNIFFER_H
             if (((current_msg->header.target_mode == IDACK) || (current_msg->header.target_mode == NODEIDACK)))
             {
                 Transmit_SendAck();
@@ -173,14 +174,19 @@ void Recep_GetData(volatile uint8_t *data)
             {
                 MsgAlloc_EndMsg();
             }
+#else //in case of a sniffer we dont send an ACK
+            MsgAlloc_EndMsg();
+#endif
         }
         else
         {
             ctx.rx.status.rx_error = true;
+#ifndef SNIFFER_H //in case of a sniffer we dont send an ACK
             if ((current_msg->header.target_mode == IDACK) || (current_msg->header.target_mode == NODEIDACK))
             {
                 Transmit_SendAck();
             }
+#endif
             MsgAlloc_InvalidMsg();
         }
         ctx.rx.callback = Recep_Drop;
@@ -355,6 +361,9 @@ luos_localhost_t Recep_NodeConcerned(header_t *header)
 {
     uint16_t i = 0;
     // Find if we are concerned by this message.
+#ifdef SNIFFER_H //In case of the sniffer app we are always concerned by each message
+    return true;
+#endif /* SNIFFER_H */
     switch (header->target_mode)
     {
         case IDACK:
