@@ -20,7 +20,6 @@
 typedef struct
 {
     // Variables
-    uint64_t timestamp[MAX_MSG_NB]; /*!< Timestamp storing ring buffer. */
     uint64_t crc_error_count;
     uint64_t corruption_count;
 } sniffer_t;

@@ -35,11 +35,6 @@ uint16_t data_size              = 0;
 uint16_t crc_val                = 0;
 static uint64_t ll_rx_timestamp = 0;
 
-#ifdef SNIFFER_H
-uint8_t w_pos = 0;
-uint8_t r_pos = 0;
-#endif /* SNIFFER_H */
-
 /*******************************************************************************
  * Function
  ******************************************************************************/
@@ -77,9 +72,6 @@ void Recep_GetHeader(volatile uint8_t *data)
             // -8 : time to transmit 8 bits at 1 us/bit
             ll_rx_timestamp = LuosHAL_GetTimestamp() - BYTE_TRANSMIT_TIME;
 
-#ifdef SNIFFER_H //when we catch the first byte we timestamp the msg
-            ctx.sniffer.timestamp[w_pos] = (uint64_t)LuosHAL_GetSystick() * 1000000;
-#endif /* SNIFFER_H */
             ctx.tx.lock = true;
             // Switch the transmit status to disable to be sure to not interpreat the end timeout as an end of transmission.
             ctx.tx.status = TX_DISABLE;
@@ -186,8 +178,6 @@ void Recep_GetData(volatile uint8_t *data)
             }
 #else  //in case of a sniffer we dont send an ACK
             MsgAlloc_EndMsg();
-            //when the msg reception is successful we advance the ts write position
-            w_pos = (w_pos < MAX_MSG_NB - 1) ? w_pos + 1 : 0;
 #endif /* SNIFFER_H */
         }
         else
