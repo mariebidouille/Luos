@@ -35,6 +35,11 @@ uint16_t data_size              = 0;
 uint16_t crc_val                = 0;
 static uint64_t ll_rx_timestamp = 0;
 
+#ifdef SNIFFER_H
+uint8_t w_pos = 0;
+uint8_t r_pos = 0;
+#endif /* SNIFFER_H */
+
 /*******************************************************************************
  * Function
  ******************************************************************************/
@@ -49,6 +54,10 @@ void Recep_Init(void)
     // Initialize the reception state machine
     ctx.rx.status.unmap = 0;
     ctx.rx.callback     = Recep_GetHeader;
+#ifdef SNIFFER_H /* counters initialization */
+    ctx.sniffer.crc_error_count  = 0;
+    ctx.sniffer.corruption_count = 0;
+#endif /* SNIFFER_H */
 }
 /******************************************************************************
  * @brief Callback to get a complete header
@@ -60,7 +69,6 @@ void Recep_GetHeader(volatile uint8_t *data)
     // Catch a byte.
     MsgAlloc_SetData(*data);
     data_count++;
-
     // Check if we have all we need.
     switch (data_count)
     {
@@ -69,6 +77,9 @@ void Recep_GetHeader(volatile uint8_t *data)
             // -8 : time to transmit 8 bits at 1 us/bit
             ll_rx_timestamp = LuosHAL_GetTimestamp() - BYTE_TRANSMIT_TIME;
 
+#ifdef SNIFFER_H //when we catch the first byte we timestamp the msg
+            ctx.sniffer.timestamp[w_pos] = (uint64_t)LuosHAL_GetSystick() * 1000000;
+#endif /* SNIFFER_H */
             ctx.tx.lock = true;
             // Switch the transmit status to disable to be sure to not interpreat the end timeout as an end of transmission.
             ctx.tx.status = TX_DISABLE;
@@ -163,7 +174,6 @@ void Recep_GetData(volatile uint8_t *data)
             {
                 Transmit_SendAck();
             }
-
             // Make an exception for reset detection command
             if (current_msg->header.cmd == RESET_DETECTION)
             {
@@ -174,9 +184,11 @@ void Recep_GetData(volatile uint8_t *data)
             {
                 MsgAlloc_EndMsg();
             }
-#else //in case of a sniffer we dont send an ACK
+#else  //in case of a sniffer we dont send an ACK
             MsgAlloc_EndMsg();
-#endif
+            //when the msg reception is successful we advance the ts write position
+            w_pos = (w_pos < MAX_MSG_NB - 1) ? w_pos + 1 : 0;
+#endif /* SNIFFER_H */
         }
         else
         {
@@ -186,7 +198,9 @@ void Recep_GetData(volatile uint8_t *data)
             {
                 Transmit_SendAck();
             }
-#endif
+#else
+            ctx.sniffer.crc_error_count++;
+#endif /* SNIFFER_H */
             MsgAlloc_InvalidMsg();
         }
         ctx.rx.callback = Recep_Drop;
@@ -271,7 +285,12 @@ void Recep_Timeout(void)
     if ((ctx.rx.callback != Recep_GetHeader) && (ctx.rx.callback != Recep_Drop))
     {
         ctx.rx.status.rx_timeout = true;
+
+#ifdef SNIFFER_H
+        ctx.sniffer.corruption_count++;
+#endif /* SNIFFER_H */
     }
+
     MsgAlloc_InvalidMsg();
     Recep_Reset();
     Transmit_End(); // This is possibly the end of a transmission, check it.
