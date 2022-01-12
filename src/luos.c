@@ -854,6 +854,65 @@ void Luos_SendStreaming(service_t *service, msg_t *msg, streaming_channel_t *str
     }
 }
 /******************************************************************************
+ * @brief Send a number of datas of a streaming channel
+ * @param Service who send
+ * @param Message to send
+ * @param streaming channel pointer
+ * @param max_size maximum sample to send
+ * @return None
+ ******************************************************************************/
+void Luos_SendStreamingSize(service_t *service, msg_t *msg, streaming_channel_t *stream, uint32_t max_size)
+{
+    // Compute number of message needed to send available datas on ring buffer
+    int msg_number = 1;
+    int data_size  = Stream_GetAvailableSampleNB(stream);
+    if (data_size > max_size)
+    {
+        data_size = max_size;
+    }
+    const int max_data_msg_size = (MAX_DATA_MSG_SIZE / stream->data_size);
+    if (data_size > max_data_msg_size)
+    {
+        msg_number = (data_size / max_data_msg_size);
+        msg_number += ((msg_number * max_data_msg_size) < data_size);
+    }
+
+    // Send messages one by one
+    for (volatile uint16_t chunk = 0; chunk < msg_number; chunk++)
+    {
+        // compute chunk size
+        uint16_t chunk_size = 0;
+        if (data_size > max_data_msg_size)
+        {
+            chunk_size = max_data_msg_size;
+        }
+        else
+        {
+            chunk_size = data_size;
+        }
+
+        // Copy data into message
+        Stream_GetSample(stream, msg->data, chunk_size);
+        msg->header.size = data_size;
+
+        // Send message
+        while (Luos_SendMsg(service, msg) == FAILED)
+        {
+            Luos_Loop();
+        }
+
+        // check end of data
+        if (data_size > max_data_msg_size)
+        {
+            data_size -= max_data_msg_size;
+        }
+        else
+        {
+            data_size = 0;
+        }
+    }
+}
+/******************************************************************************
  * @brief Receive a streaming channel datas
  * @param Service who send
  * @param Message to send
