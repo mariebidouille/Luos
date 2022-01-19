@@ -183,7 +183,8 @@ void Recep_GetData(volatile uint8_t *data)
             // Make an exception for bootloader command
             if ((current_msg->header.cmd == BOOTLOADER_CMD) && (current_msg->data[0] == BOOTLOADER_START))
             {
-                LuosBootloader_MsgHandler(current_msg);
+                msg_t *msg_to_decode = current_msg;
+                LuosBootloader_MsgHandler(msg_to_decode);
             }
 #endif
         }
