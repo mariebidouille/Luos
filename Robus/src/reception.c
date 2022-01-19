@@ -15,6 +15,7 @@
 #include "luos_utils.h"
 #include "timestamp.h"
 #include "robus.h"
+#include "bootloader_core.h"
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
@@ -177,6 +178,14 @@ void Recep_GetData(volatile uint8_t *data)
             {
                 MsgAlloc_EndMsg();
             }
+
+#ifndef BOOTLOADER_CONFIG
+            // Make an exception for bootloader command
+            if ((current_msg->header.cmd == BOOTLOADER_CMD) && (current_msg->data[0] == BOOTLOADER_START))
+            {
+                LuosBootloader_MsgHandler(current_msg);
+            }
+#endif
         }
         else
         {
